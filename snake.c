@@ -8,7 +8,6 @@
 #include <time.h>
 
 //GLOBALS (I can use globals in this as it's not made to be extended)
-uint64_t display[64] = {0UL};
 uint64_t pixel = 1;
 unsigned char running = 1;
 
@@ -30,6 +29,7 @@ typedef struct snake {
 
 snake * snakesetup();
 void update(snake *, coord *,SDL_Window *);
+void draw(coord *, SDL_Window *, SDL_GLContext);
 void gameover(snake *,SDL_Window *);
 
 int main() {
@@ -45,8 +45,6 @@ int main() {
 	srand(time(0));
 	food->x = rand() % 64;
 	food->y = rand() % 64;
-	display[player->head->y] = (pixel << (~(player->head->x) & 0x3F));
-	display[food->y] = (pixel << (~food->x & 0x3F));
 	while(running) {
 		SDL_Event event;
 		while(SDL_PollEvent(&event)) {
@@ -106,20 +104,8 @@ int main() {
 		glLoadIdentity();
 		glOrtho(0,64,64,0,-1.0,1.0); //Translates Canvas coordinates so that top left is 0,0 and bottom right is 64,64
 		glClear(GL_COLOR_BUFFER_BIT);
-		for (int y = 0; y < 64; y++) {
-			uint64_t row = display[y];
-			for (int x = 0; x < 64; x++) {
-				if((row >> (~x & 0x3F))&0x1) {
-					glColor3d(1,1,1);
-					glBegin(GL_QUADS);
-					glVertex2d(x		,y + 1	); //Bottom left
-					glVertex2d(x + 1	,y + 1	); //Bottom Right
-					glVertex2d(x + 1	,y		); //Top Right
-					glVertex2d(x		,y		); //Top Left
-					glEnd();
-				}
-			}
-		}
+		draw(player->head,Window,glcontext);
+		draw(food,Window,glcontext);
 		glFlush();
 		SDL_GL_SwapWindow(Window);
 		SDL_Delay(100);
@@ -143,9 +129,6 @@ snake * snakesetup() {
 }
 
 void update(snake * Snake,coord * food,SDL_Window * window) {
-	for (char i = 0; i < 64; i++) {
-		display[i] = 0UL;
-	}
 	char extended = 0;
 	coord temp1;
 	coord temp2;
@@ -165,9 +148,6 @@ void update(snake * Snake,coord * food,SDL_Window * window) {
 	if(Snake->head->x > 63 || Snake->head->y > 63 ) {
 		gameover(Snake,window);
 		return;
-	}
-	else {
-		display[Snake->head->y] = display[Snake->head->y] ^ (pixel << (~Snake->head->x & 0x3F));
 	}
 
 	if(Snake->head->x == food->x && Snake->head->y == food->y) {
@@ -209,7 +189,6 @@ void update(snake * Snake,coord * food,SDL_Window * window) {
 		temp2.y = snakebody->y;
 		snakebody->x = temp1.x;
 		snakebody->y = temp1.y;
-		display[snakebody->y] = display[snakebody->y] ^ (pixel << (~snakebody->x & 0x3F));
 		temp1.x = temp2.x;
 		temp1.y = temp2.y;
 		if(snakebody->next == NULL && i < (Snake->size - 1)) {
@@ -226,8 +205,21 @@ void update(snake * Snake,coord * food,SDL_Window * window) {
 	if (extended == 0) {
 		free(snakebody);
 	}
-	display[food->y] = display[food->y] ^ pixel << (~(food->x) & 0x3F);
 	return;
+}
+
+void draw(coord * current, SDL_Window * window, SDL_GLContext glcontext) {
+	glColor3d(1,1,1);
+	glBegin(GL_QUADS);
+	glVertex2d(current->x		,current->y + 1	); //Bottom left
+	glVertex2d(current->x + 1	,current->y + 1	); //Bottom Right
+	glVertex2d(current->x + 1	,current->y		); //Top Right
+	glVertex2d(current->x		,current->y		); //Top Left
+	glEnd();
+	if (current->next == NULL) {
+		return;
+	}
+	return draw(current->next,window,glcontext);
 }
 
 void gameover(snake * player, SDL_Window * window) {
