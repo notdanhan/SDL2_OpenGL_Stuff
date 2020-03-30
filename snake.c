@@ -3,12 +3,10 @@
 #include <SDL2/SDL.h>
 #include <assert.h>
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
 
 //GLOBALS (I can use globals in this as it's not made to be extended)
-uint64_t pixel = 1;
 unsigned char running = 1;
 
 typedef struct coordinate coord;
